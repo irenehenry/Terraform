@@ -1,26 +1,27 @@
 name: Irene
+
 on:
-  
   workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Checkout code
-       uses: actions/checkout@v4
+        uses: actions/checkout@v4
 
-       # Setup Node.js (This helps avoid the Node.js 20 warning)
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: create a directory
-        run: mkdir irene_yaml
+      - name: Create a directory
+        run: mkdir -p irene_yaml
 
-      - name: create a file
-        run: cd irene_yaml && touch hello.txt
+      - name: Create a file
+        run: |
+          cd irene_yaml
+          touch hello.txt
           echo "Hello from GitHub Actions!" > hello.txt
           echo "File created successfully!"
           ls -la
