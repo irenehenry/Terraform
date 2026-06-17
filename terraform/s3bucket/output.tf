@@ -1,11 +1,11 @@
 output "bucket_name" {
-    value = aws_s3_bucket.abc.bucket
+    value = var.create_s3 ? aws_s3_bucket.this[0].bucket : null
 }
 
 output "bucket_arn" {
-    value = aws_s3_bucket.abc.arn
+    value = var.create_s3 ? aws_s3_bucket.this[0].arn : null        
 }
 
 output "bucket_tags" {
-    value = aws_s3_bucket.abc.tags
+    value = var.create_s3 ? aws_s3_bucket.this[0].tags : null
 }
