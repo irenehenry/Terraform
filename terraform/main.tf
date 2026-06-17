@@ -1,7 +1,7 @@
 module "s3_bucket" {
   source = "./s3bucket"
   bucket_name = var.bucket_name
-  # create_s3 = var.create_s3
+  create_s3 = var.create_s3
 }
 
 # module "security_group" {
