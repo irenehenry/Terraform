@@ -56,7 +56,7 @@ jobs:
         #   cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}  # For Terraform Cloud
 
       - name: Terraform Init
-        run: terraform init
+        run: terraform init -upgrade
         working-directory: ./terraform/s3bucket
         # If using S3 backend, uncomment and configure:
         # run: |
