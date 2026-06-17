@@ -43,7 +43,7 @@ jobs:
 
       - name: Terraform Init
         run: terraform init
-        working-directory: ./Terraform
+        working-directory: ./Terraform/s3bucket
         # If using S3 backend, uncomment and configure:
         # run: |
         #   terraform init \
@@ -58,7 +58,7 @@ jobs:
 
       - name: Terraform Apply
         run: terraform apply -var-file="dev.tfvars" -auto-approve
-        working-directory: ./Terraform
+        working-directory: ./Terraform/s3bucket
 
       # - name: Terraform Destroy
       #   run: terraform destroy -var-file="dev.tfvars" -auto-approve
