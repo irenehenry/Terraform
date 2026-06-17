@@ -24,6 +24,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # === DEBUG: Show exact folder structure ===
+      - name: Debug Directory Structure
+        run: |
+          echo "=== Current Directory ==="
+          pwd
+          echo "=== Root Contents ==="
+          ls -la
+          echo "=== Terraform Folder Contents ==="
+          ls -la Terraform || echo "No Terraform folder"
+          echo "=== terraform Folder Contents ==="
+          ls -la terraform || echo "No terraform folder"
+          echo "=== Looking for s3bucket ==="
+          find . -name "s3bucket" -type d
+
       # ==================== AWS Authentication ====================
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -43,7 +57,7 @@ jobs:
 
       - name: Terraform Init
         run: terraform init
-        working-directory: ./Terraform/terraform/s3bucket
+        working-directory: terraform/terraform/s3bucket
         # If using S3 backend, uncomment and configure:
         # run: |
         #   terraform init \
@@ -54,11 +68,10 @@ jobs:
 
       - name: Terraform Plan
         run: terraform plan -var-file="dev.tfvars"
-        working-directory: ./Terraform/terraform/s3bucket
+        working-directory: terraform/terraform/s3bucket
 
       - name: Terraform Apply
         run: terraform apply -var-file="dev.tfvars" -auto-approve
-        working-directory: ./Terraform/terraform/s3bucket
-
+        working-directory: terraform/terraform/s3bucket
       # - name: Terraform Destroy
       #   run: terraform destroy -var-file="dev.tfvars" -auto-approve
