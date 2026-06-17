@@ -1,13 +1,13 @@
 output "bucket_name" {
-  value = module.s3_bucket.bucket
+  value = module.s3_bucket.bucket_name
 }
 
 output "bucket_arn" {
-  value = module.s3_bucket.arn
+  value = module.s3_bucket.bucket_arn
 }
 
 output "bucket_tags" {
-  value = module.s3_bucket.tags
+  value = module.s3_bucket.bucket_tags
 }
 
 # output "aws_account_id" {
@@ -49,5 +49,5 @@ output "bucket_tags" {
 
 # Optional: Only show S3 outputs if created
 output "s3_bucket_name" {
-  value = var.create_s3 ? aws_s3_bucket.s3_bucket[0].bucket : "S3 Not Created"
+  value = var.create_s3 ? module.s3_bucket.bucket_name : "S3 Not Created"
 }
