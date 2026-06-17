@@ -1,0 +1,65 @@
+name: 'Terraform - AWS'
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'Terraform/**'
+  pull_request:
+    paths:
+      - 'Terraform/**'
+  workflow_dispatch:
+
+permissions:
+  id-token: write      # Required for OIDC
+  contents: read
+
+jobs:
+  terraform:
+    name: 'Terraform'
+    runs-on: ubuntu-latest
+    environment: production
+    defaults:
+      run:
+        shell: bash
+        working-directory: Terraform
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ==================== AWS Authentication ====================
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}           # Recommended (OIDC)
+          aws-region: ${{ secrets.AWS_REGION }}               
+          role-session-name: GitHubActions-Terraform
+          # Alternative (if not using OIDC/role):
+          # aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          # aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          # aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        # with:
+        #   cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}  # For Terraform Cloud
+
+      - name: Terraform Init
+        run: terraform init
+        # If using S3 backend, uncomment and configure:
+        # run: |
+        #   terraform init \
+        #     -backend-config="bucket=your-terraform-state-bucket" \
+        #     -backend-config="key=dev/terraform.tfstate" \
+        #     -backend-config="region=us-east-1" \
+        #     -backend-config="encrypt=true"
+
+      - name: Terraform Plan
+        run: terraform plan -var-file="dev.tfvars"
+
+      - name: Terraform Apply
+        run: terraform apply -var-file="dev.tfvars" -auto-approve
+
+      # - name: Terraform Destroy
+      #   run: terraform destroy -var-file="dev.tfvars" -auto-approve

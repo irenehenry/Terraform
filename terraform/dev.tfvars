@@ -1,3 +1,7 @@
-bucket_name = "irene42343232"
-create_s3   = false         # ← Important
-create_rds  = true
+bucket_name = "irene-terraform-bucket123"   # ← Important
+create_s3   = true         # ← Important
+create_rds  = false
+
+
+# sg_name = "irene-sg"
+
