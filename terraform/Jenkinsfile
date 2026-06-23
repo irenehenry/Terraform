@@ -2,10 +2,10 @@ pipeline {
     agent any
     
     environment {
-        AWS_REGION = 'us-east-1'
-        TF_WORKING_DIR = 'terraform'        // Change if your tf files are in another folder
+        AWS_REGION     = 'us-east-1'
+        TF_WORKING_DIR = 'terraform'
     }
-    
+
     stages {
         stage('Checkout Code') {
             steps {
@@ -13,7 +13,18 @@ pipeline {
                 sh 'echo "✅ Code Checked Out"'
             }
         }
-        
+
+        stage('Cache Terraform') {
+            steps {
+                dir("${TF_WORKING_DIR}") {
+                    // Cache Terraform providers and modules
+                    cache(path: '.terraform', key: "terraform-${env.GIT_COMMIT}", restoreKeys: ['terraform-']) {
+                        sh 'echo "Terraform cache restored or initialized"'
+                    }
+                }
+            }
+        }
+
         stage('Terraform Init') {
             steps {
                 dir("${TF_WORKING_DIR}") {
@@ -21,7 +32,7 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Terraform Validate') {
             steps {
                 dir("${TF_WORKING_DIR}") {
@@ -29,15 +40,15 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Terraform Plan') {
             steps {
                 dir("${TF_WORKING_DIR}") {
-                    sh 'terraform plan -var-file="dev.tfvars" -out=plan.tfplan'
+                    sh 'terraform plan -var-file="dev.tfvars" -no-color -out=plan.tfplan'
                 }
             }
         }
-        
+
         stage('Manual Approval') {
             when {
                 branch 'main'
@@ -47,7 +58,7 @@ pipeline {
                       ok: 'Yes, Apply'
             }
         }
-        
+
         stage('Terraform Apply') {
             steps {
                 dir("${TF_WORKING_DIR}") {
@@ -56,13 +67,16 @@ pipeline {
             }
         }
     }
-    
+
     post {
         success {
             echo '✅ Terraform Deployment Completed Successfully!'
         }
         failure {
             echo '❌ Terraform Deployment Failed!'
+        }
+        always {
+            cleanWs()   // Clean workspace after build (optional)
         }
     }
 }
