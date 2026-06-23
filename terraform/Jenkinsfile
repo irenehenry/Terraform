@@ -1,0 +1,68 @@
+pipeline {
+    agent any
+    
+    environment {
+        AWS_REGION = 'us-east-1'
+        TF_WORKING_DIR = 'terraform'        // Change if your tf files are in another folder
+    }
+    
+    stages {
+        stage('Checkout Code') {
+            steps {
+                checkout scm
+                sh 'echo "✅ Code Checked Out"'
+            }
+        }
+        
+        stage('Terraform Init') {
+            steps {
+                dir("${TF_WORKING_DIR}") {
+                    sh 'terraform init -upgrade'
+                }
+            }
+        }
+        
+        stage('Terraform Validate') {
+            steps {
+                dir("${TF_WORKING_DIR}") {
+                    sh 'terraform validate'
+                }
+            }
+        }
+        
+        stage('Terraform Plan') {
+            steps {
+                dir("${TF_WORKING_DIR}") {
+                    sh 'terraform plan -var-file="dev.tfvars" -out=plan.tfplan'
+                }
+            }
+        }
+        
+        stage('Manual Approval') {
+            when {
+                branch 'main'
+            }
+            steps {
+                input message: 'Do you want to apply these changes?', 
+                      ok: 'Yes, Apply'
+            }
+        }
+        
+        stage('Terraform Apply') {
+            steps {
+                dir("${TF_WORKING_DIR}") {
+                    sh 'terraform apply -var-file="dev.tfvars" -auto-approve'
+                }
+            }
+        }
+    }
+    
+    post {
+        success {
+            echo '✅ Terraform Deployment Completed Successfully!'
+        }
+        failure {
+            echo '❌ Terraform Deployment Failed!'
+        }
+    }
+}
