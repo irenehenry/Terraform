@@ -1,27 +1,17 @@
 pipeline {
     agent any
-    
+
     environment {
         AWS_REGION     = 'us-east-1'
         TF_WORKING_DIR = 'terraform'
     }
 
     stages {
+
         stage('Checkout Code') {
             steps {
                 checkout scm
-                sh 'echo "✅ Code Checked Out"'
-            }
-        }
-
-        stage('Cache Terraform') {
-            steps {
-                dir("${TF_WORKING_DIR}") {
-                    // Cache Terraform providers and modules
-                    cache(path: '.terraform', key: "terraform-${env.GIT_COMMIT}", restoreKeys: ['terraform-']) {
-                        sh 'echo "Terraform cache restored or initialized"'
-                    }
-                }
+                sh 'echo "Code Checked Out"'
             }
         }
 
@@ -43,8 +33,24 @@ pipeline {
 
         stage('Terraform Plan') {
             steps {
-                dir("${TF_WORKING_DIR}") {
-                    sh 'terraform plan -var-file="dev.tfvars" -no-color -out=plan.tfplan'
+
+                withCredentials([
+                    string(credentialsId: 'aws-access-key', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+
+                    dir("${TF_WORKING_DIR}") {
+                        sh '''
+                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                        export AWS_DEFAULT_REGION=$AWS_REGION
+
+                        terraform plan \
+                        -var-file="dev.tfvars" \
+                        -no-color \
+                        -out=plan.tfplan
+                        '''
+                    }
                 }
             }
         }
@@ -54,15 +60,30 @@ pipeline {
                 branch 'main'
             }
             steps {
-                input message: 'Do you want to apply these changes?', 
-                      ok: 'Yes, Apply'
+                input message: 'Do you want to apply these changes?',
+                      ok: 'Apply'
             }
         }
 
         stage('Terraform Apply') {
             steps {
-                dir("${TF_WORKING_DIR}") {
-                    sh 'terraform apply -var-file="dev.tfvars" -auto-approve'
+
+                withCredentials([
+                    string(credentialsId: 'aws-access-key', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+
+                    dir("${TF_WORKING_DIR}") {
+                        sh '''
+                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                        export AWS_DEFAULT_REGION=$AWS_REGION
+
+                        terraform apply \
+                        -var-file="dev.tfvars" \
+                        -auto-approve
+                        '''
+                    }
                 }
             }
         }
@@ -70,13 +91,15 @@ pipeline {
 
     post {
         success {
-            echo '✅ Terraform Deployment Completed Successfully!'
+            echo 'Terraform Deployment Completed Successfully!'
         }
+
         failure {
-            echo '❌ Terraform Deployment Failed!'
+            echo 'Terraform Deployment Failed!'
         }
+
         always {
-            cleanWs()   // Clean workspace after build (optional)
+            cleanWs()
         }
     }
 }
