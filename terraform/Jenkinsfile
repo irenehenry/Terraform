@@ -7,18 +7,22 @@ pipeline {
     }
 
     stages {
-
         stage('Checkout Code') {
             steps {
                 checkout scm
-                sh 'echo "Code Checked Out"'
+                sh 'echo "Code Checked Out Successfully"'
             }
         }
 
         stage('Terraform Init') {
             steps {
                 dir("${TF_WORKING_DIR}") {
-                    sh 'terraform init -upgrade'
+                    retry(2) {  // Retry in case of network/Jenkins restart issues
+                        sh '''
+                            echo "Running Terraform Init..."
+                            terraform init -upgrade
+                        '''
+                    }
                 }
             }
         }
@@ -26,29 +30,31 @@ pipeline {
         stage('Terraform Validate') {
             steps {
                 dir("${TF_WORKING_DIR}") {
-                    sh 'terraform validate'
+                    sh '''
+                        echo "Validating Terraform Configuration..."
+                        terraform validate
+                    '''
                 }
             }
         }
 
         stage('Terraform Plan') {
             steps {
-
                 withCredentials([
                     string(credentialsId: 'aws-access-key', variable: 'AWS_ACCESS_KEY_ID'),
                     string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET_ACCESS_KEY')
                 ]) {
-
                     dir("${TF_WORKING_DIR}") {
                         sh '''
-                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
-                        export AWS_DEFAULT_REGION=$AWS_REGION
+                            echo "Running Terraform Plan..."
+                            export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                            export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                            export AWS_DEFAULT_REGION=$AWS_REGION
 
-                        terraform plan \
-                        -var-file="dev.tfvars" \
-                        -no-color \
-                        -out=plan.tfplan
+                            terraform plan \
+                                -var-file="dev.tfvars" \
+                                -no-color \
+                                -out=plan.tfplan
                         '''
                     }
                 }
@@ -67,21 +73,20 @@ pipeline {
 
         stage('Terraform Apply') {
             steps {
-
                 withCredentials([
                     string(credentialsId: 'aws-access-key', variable: 'AWS_ACCESS_KEY_ID'),
                     string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET_ACCESS_KEY')
                 ]) {
-
                     dir("${TF_WORKING_DIR}") {
                         sh '''
-                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
-                        export AWS_DEFAULT_REGION=$AWS_REGION
+                            echo "Running Terraform Apply..."
+                            export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                            export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                            export AWS_DEFAULT_REGION=$AWS_REGION
 
-                        terraform apply \
-                        -var-file="dev.tfvars" \
-                        -auto-approve
+                            terraform apply \
+                                -var-file="dev.tfvars" \
+                                -auto-approve
                         '''
                     }
                 }
@@ -93,11 +98,9 @@ pipeline {
         success {
             echo 'Terraform Deployment Completed Successfully!'
         }
-
         failure {
             echo 'Terraform Deployment Failed!'
         }
-
         always {
             cleanWs()
         }
