@@ -6,6 +6,12 @@ pipeline {
         TF_WORKING_DIR = 'terraform'
     }
 
+    options {
+        timeout(time: 30, unit: 'MINUTES')  // Prevent hanging builds
+        timestamps()                        // Better log timestamps
+        retry(1)                            // Retry whole pipeline once on failure (optional)
+    }
+
     stages {
         stage('Checkout Code') {
             steps {
@@ -17,7 +23,7 @@ pipeline {
         stage('Terraform Init') {
             steps {
                 dir("${TF_WORKING_DIR}") {
-                    retry(2) {  // Retry in case of network/Jenkins restart issues
+                    retry(3) {
                         sh '''
                             echo "Running Terraform Init..."
                             terraform init -upgrade
@@ -46,7 +52,7 @@ pipeline {
                 ]) {
                     dir("${TF_WORKING_DIR}") {
                         sh '''
-                            echo "Running Terraform Plan..."
+                            echo "📋 Running Terraform Plan..."
                             export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
                             export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
                             export AWS_DEFAULT_REGION=$AWS_REGION
@@ -66,7 +72,7 @@ pipeline {
                 branch 'main'
             }
             steps {
-                input message: 'Do you want to apply these changes?',
+                input message: 'Do you want to apply these changes?', 
                       ok: 'Apply'
             }
         }
