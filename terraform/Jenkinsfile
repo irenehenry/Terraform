@@ -2,6 +2,11 @@ pipeline {
     agent {
         label 'jenkins-agent-1 || built-in'
     }
+
+    triggers {
+        githubPush()              // This enables GitHub webhook trigger
+    }
+    
     environment {
         AWS_REGION     = 'us-east-1'
         TF_WORKING_DIR = 'terraform'
